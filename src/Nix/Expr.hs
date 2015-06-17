@@ -4,6 +4,7 @@
 {-# LANGUAGE ViewPatterns #-}
 module Nix.Expr where
 
+import qualified Prelude as P
 import Nix.Common
 import qualified Data.HashMap.Strict as H
 import qualified Data.HashSet as HS
@@ -58,13 +59,11 @@ k =$= v = Assign [Plain k] v
 str :: Text -> NixExpr
 str = OneLineString . Plain
 
---assignsToMap :: [NixAssign] -> Record NixExpr
---assignsToMap asns = H.fromList $ map totuple asns where
---  totuple (Assign [])
-
+-- | Shortcut for a simple kwarg set.
 toKwargs :: [(Name, Maybe NixExpr)] -> FuncArgs
 toKwargs stuff = Kwargs (H.fromList stuff) False Nothing
 
+-- | Returns whether a string is a valid identifier.
 isValidIdentifier :: Name -> Bool
 isValidIdentifier "" = False
 isValidIdentifier (unpack -> c:cs) = validFirst c && validRest cs
@@ -72,17 +71,11 @@ isValidIdentifier (unpack -> c:cs) = validFirst c && validRest cs
         validRest (c:cs) = (validFirst c || isDigit c) && validRest cs
         validRest "" = True
 
+-- | Renders a path.
 renderPath :: [NixString] -> Text
 renderPath = mapJoinBy "." ren where
   ren (Plain txt) | isValidIdentifier txt = txt
   ren txt = renderOneLineString txt
-
-renderAssign :: NixAssign -> Text
-renderAssign (Assign p e) = renderPath p <> " = " <> renderNixExpr e <> ";"
-renderAssign (Inherit maybE names) = do
-  let ns = joinBy " " $ HS.toList names
-      e = maybe "" (\e -> " (" <> renderNixExpr e <> ") ") maybE
-  "inherit " <> e <> ns <> ";"
 
 renderOneLineString :: NixString -> Text
 renderOneLineString s = "\"" <> escape escapeSingle s <> "\""
@@ -90,8 +83,8 @@ renderOneLineString s = "\"" <> escape escapeSingle s <> "\""
 renderMultiLineString :: NixString -> Text
 renderMultiLineString s = "''" <> escape escapeMulti s <> "''"
 
-renderParens e | isTerm e = renderNixExpr e
-renderParens e = "(" <> renderNixExpr e <> ")"
+renderParens e | isTerm e = render e
+renderParens e = "(" <> render e <> ")"
 
 renderKwargs :: [(Name, Maybe NixExpr)] -> Bool -> Text
 renderKwargs ks dotdots = case (ks, dotdots) of
@@ -101,18 +94,12 @@ renderKwargs ks dotdots = case (ks, dotdots) of
   (ks, False) -> "{" <> ren ks <> "}"
   where ren ks = mapJoinBy ", " ren' ks
         ren' (k, Nothing) = k
-        ren' (k, Just e) = k <> " ? " <> renderNixExpr e
-
-renderFuncArgs :: FuncArgs -> Text
-renderFuncArgs (Arg a) = a
-renderFuncArgs (Kwargs k dotdots mname) =
-  let args = renderKwargs (H.toList k) dotdots
-  in args <> maybe "" (\n -> " @ " <> n) mname
+        ren' (k, Just e) = k <> " ? " <> render e
 
 renderDot :: NixExpr -> [NixString] -> Maybe NixExpr -> Text
 renderDot e pth alt = renderParens e <> rpth <> ralt where
   rpth = case pth of {[] -> ""; _ -> "." <> renderPath pth}
-  ralt = case alt of {Nothing -> ""; Just e' -> " or " <> renderNixExpr e'}
+  ralt = case alt of {Nothing -> ""; Just e' -> " or " <> render e'}
 
 -- | A "term" is something which does not need to be enclosed in
 -- parentheses.
@@ -130,32 +117,88 @@ isTerm (Dot _ _ Nothing) = True
 isTerm (NixPathVar _) = True
 isTerm _ = False
 
-renderNixExpr :: NixExpr -> Text
-renderNixExpr = \case
-  Var name -> name
-  Num n -> pack $ show n
-  Bool True -> "true"
-  Bool False -> "false"
-  Null -> "null"
-  NixPathVar v -> "<" <> v <> ">"
-  OneLineString s -> renderOneLineString s
-  MultiLineString s -> renderMultiLineString s
-  Path pth -> pathToText pth
-  List es -> "[" <> mapJoinBy " " renderNixExpr es <> "]"
-  Set True asns -> "rec " <> renderNixExpr (Set False asns)
-  Set False asns -> "{" <> concatMap renderAssign asns <> "}"
-  Let asns e -> concat ["let ", concatMap renderAssign asns, " in ",
-                        renderNixExpr e]
-  Function arg e -> renderFuncArgs arg <> ": " <> renderNixExpr e
-  Apply e1@(Apply _ _) e2 -> renderNixExpr e1 <> " " <> renderNixExpr e2
-  Apply e1 e2 -> renderNixExpr e1 <> " " <> renderParens e2
-  With e1 e2 -> "with " <> renderNixExpr e1 <> "; " <> renderNixExpr e2
-  Assert e1 e2 -> "assert " <> renderNixExpr e1 <> "; " <> renderNixExpr e2
-  If e1 e2 e3 -> "if " <> renderNixExpr e1 <> " then "
-                       <> renderNixExpr e2 <> " else " <> renderNixExpr e3
-  Dot e pth alt -> renderDot e pth alt
-  BinOp e1 op e2 -> renderParens e1 <> " " <> op <> " " <> renderParens e2
-  Not e -> "!" <> renderNixExpr e
+instance Render NixExpr where
+  render = \case
+    Var name -> name
+    Num n -> pack $ show n
+    Bool True -> "true"
+    Bool False -> "false"
+    Null -> "null"
+    NixPathVar v -> "<" <> v <> ">"
+    OneLineString s -> renderOneLineString s
+    MultiLineString s -> renderMultiLineString s
+    Path pth -> pathToText pth
+    List es -> "[" <> mapJoinBy " " render es <> "]"
+    Set True asns -> "rec " <> render (Set False asns)
+    Set False asns -> "{" <> concatMap render asns <> "}"
+    Let asns e -> concat ["let ", concatMap render asns, " in ",
+                          render e]
+    Function arg e -> render arg <> ": " <> render e
+    Apply e1@(Apply _ _) e2 -> render e1 <> " " <> render e2
+    Apply e1 e2 -> render e1 <> " " <> renderParens e2
+    With e1 e2 -> "with " <> render e1 <> "; " <> render e2
+    Assert e1 e2 -> "assert " <> render e1 <> "; " <> render e2
+    If e1 e2 e3 -> "if " <> render e1 <> " then "
+                         <> render e2 <> " else " <> render e3
+    Dot e pth alt -> renderDot e pth alt
+    BinOp e1 op e2 -> renderParens e1 <> " " <> op <> " " <> renderParens e2
+    Not e -> "!" <> render e
+
+  renderI expr = case expr of
+    List es -> wrapIndented "[" "]" es
+    Set True asns -> tell "rec " >> renderI (Set False asns)
+    Set False asns -> wrapIndented "{" "}" asns
+    Let asns e -> wrapIndented "let" "in " asns >> renderI e
+    Function params e -> renderI params >> tell ": " >> indented (renderI e)
+    Apply e1@(Apply _ _) e2 -> renderI e1 >> tell " " >> renderI e2
+    Apply e1 e2 | isTerm e2 -> renderI e1 >> tell " " >> renderI e2
+    Apply e1 e2 -> renderI e1 >> tell " (" >> renderI e2 >> tell ")"
+    e -> tell $ render e
+
+instance Render FuncArgs where
+  render (Arg a) = a
+  render (Kwargs k dotdots mname) =
+    let args = renderKwargs (H.toList k) dotdots
+    in args <> maybe "" (\n -> " @ " <> n) mname
+
+  renderI (Arg a) = tell a
+  renderI k@(Kwargs ks _ _) | H.size ks <= 4 = tell $ render k
+  renderI (Kwargs ks dotdots mname) = do
+    tell "{"
+    indented $ do
+      let pairs = H.toList ks
+          renderPair (n, v) = inNewLine $ do
+            tell n
+            case v of
+              Nothing -> return ()
+              Just e -> tell " ? " >> renderI e
+          trailingCommas = if dotdots then pairs else P.init pairs
+          final = if dotdots then Nothing else Just $ P.last pairs
+      forM_ trailingCommas $ \(n, v) -> do
+        renderPair (n, v)
+        tell ","
+      forM_ final renderPair
+      when dotdots $ inNewLine $ tell "..."
+    inNewLine $ tell "}"
+    case mname of
+      Nothing -> return ()
+      Just name -> tell " @ " >> tell name
+
+instance Render NixAssign where
+  render (Assign p e) = renderPath p <> " = " <> render e <> ";"
+  render (Inherit maybE names) = do
+    let ns = joinBy " " $ HS.toList names
+        e = maybe "" (\e -> " (" <> render e <> ") ") maybE
+    "inherit " <> e <> ns <> ";"
+
+  renderI (Assign p e) = do
+    tell $ renderPath p <> " = "
+    renderI e
+    tell ";"
+  renderI (Inherit maybE names) = do
+    let ns = joinBy " " $ HS.toList names
+        e = maybe "" (\e -> " (" <> render e <> ") ") maybE
+    tell $ "inherit " <> e <> ns <> ";"
 
 escapeSingle :: String -> String
 escapeSingle s = case s of
@@ -175,5 +218,5 @@ escapeMulti s = case s of
 
 escape :: (String -> String) -> NixString -> Text
 escape esc (Plain s) = pack $ esc $ unpack s
-escape esc (Antiquote s e s') = concat [escape esc s, "${", renderNixExpr e,
+escape esc (Antiquote s e s') = concat [escape esc s, "${", render e,
                                         "}", escape esc s']

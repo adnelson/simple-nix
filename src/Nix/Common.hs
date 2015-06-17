@@ -17,6 +17,7 @@ module Nix.Common (
     module Control.Monad.Identity,
     module Control.Monad.State.Strict,
     module Control.Monad.Reader,
+    module Control.Monad.Writer,
     module Control.Monad.Trans,
     module Data.Char,
     module Data.HashMap.Strict,
@@ -40,7 +41,8 @@ import qualified Prelude as P
 import Control.Monad (when)
 import Control.Monad.Trans (MonadIO(..), lift)
 import Control.Monad.Reader (ReaderT(..), MonadReader(..), (<=<), (>=>), ask,
-                             asks)
+                             asks, runReaderT)
+import Control.Monad.Writer (WriterT(..), MonadWriter(..), runWriterT)
 import Control.Monad.State.Strict (MonadState, StateT, State, get, gets,
                                    modify, put, liftM, liftIO, runState,
                                    runStateT, execState, execStateT,
