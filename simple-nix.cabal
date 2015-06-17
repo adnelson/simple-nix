@@ -20,7 +20,7 @@ library
   exposed-modules:     Nix, Nix.Expr, Nix.Parser
   other-modules:       Nix.Common
   -- other-extensions:
-  build-depends:       base
+  build-depends:       base >=4.8 && <4.9
                      , classy-prelude
                      , text
                      , mtl
