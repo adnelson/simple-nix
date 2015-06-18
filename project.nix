@@ -4,7 +4,7 @@
 }:
 mkDerivation {
   pname = "simple-nix";
-  version = "0.1.0.0";
+  version = "0.1.0.3";
   src = ./.;
   buildDepends = [
     base classy-prelude error-list MissingH mtl parsec system-filepath

@@ -147,13 +147,29 @@ instance Render NixExpr where
   renderI expr = case expr of
     List es -> wrapIndented "[" "]" es
     Set True asns -> tell "rec " >> renderI (Set False asns)
-    Set False asns -> wrapIndented "{" "}" asns
-    Let asns e -> wrapIndented "let" "in " asns >> renderI e
-    Function params e -> renderI params >> tell ": " >> indented (renderI e)
+    Set False asns -> wrapAssigns "{" "}" asns
+    Let asns e -> wrapAssigns "let " "in " asns >> renderI e
+    Function params e -> renderI params >> tell ": " >> renderI e
     Apply e1@(Apply _ _) e2 -> renderI e1 >> tell " " >> renderI e2
     Apply e1 e2 | isTerm e2 -> renderI e1 >> tell " " >> renderI e2
     Apply e1 e2 -> renderI e1 >> tell " (" >> renderI e2 >> tell ")"
+    With e1 e2 -> do
+      tell "with "
+      renderI e1
+      tell "; "
+      renderI e2
     e -> tell $ render e
+
+renderSepBy :: Render a => Text -> [a] -> Indenter
+renderSepBy sep [x, y] = renderI x >> tell sep >> renderI y
+renderSepBy sep [x] = renderI x
+renderSepBy sep (x:xs) = renderI x >> tell sep >> renderSepBy sep xs
+renderSepBy _ [] = return ()
+
+wrapAssigns :: Text -> Text -> [NixAssign] -> Indenter
+wrapAssigns start finish [] = tell start >> tell finish
+wrapAssigns start finish [a] = tell start >> renderI a >> tell finish
+wrapAssigns start finish asns = wrapIndented start finish asns
 
 instance Render FuncArgs where
   render (Arg a) = a
@@ -194,11 +210,11 @@ instance Render NixAssign where
   renderI (Assign p e) = do
     tell $ renderPath p <> " = "
     renderI e
-    tell ";"
+    tell "; "
   renderI (Inherit maybE names) = do
     let ns = joinBy " " $ HS.toList names
         e = maybe "" (\e -> " (" <> render e <> ") ") maybE
-    tell $ "inherit " <> e <> ns <> ";"
+    tell $ "inherit " <> e <> ns <> "; "
 
 escapeSingle :: String -> String
 escapeSingle s = case s of
