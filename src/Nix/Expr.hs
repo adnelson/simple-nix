@@ -51,13 +51,25 @@ instance IsString NixString where
   fromString = Plain . fromString
 
 instance IsString NixExpr where
-  fromString = OneLineString . fromString
+  fromString = Var . fromString
 
 (=$=) :: Name -> NixExpr -> NixAssign
 k =$= v = Assign [Plain k] v
 
 str :: Text -> NixExpr
 str = OneLineString . Plain
+
+dot :: NixExpr -> [NixString] -> NixExpr
+dot e pth = Dot e pth Nothing
+
+simpleKwargs :: [Name] -> FuncArgs
+simpleKwargs ns = Kwargs (H.fromList $ map (\n -> (n, Nothing)) ns) False Nothing
+
+simpleSet :: [(Name, NixExpr)] -> NixExpr
+simpleSet = Set False . map (uncurry (=$=))
+
+simpleSetRec :: [(Name, NixExpr)] -> NixExpr
+simpleSetRec = Set True . map (uncurry (=$=))
 
 -- | Shortcut for a simple kwarg set.
 toKwargs :: [(Name, Maybe NixExpr)] -> FuncArgs
