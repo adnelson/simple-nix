@@ -170,6 +170,10 @@ instance Render NixExpr where
       renderI e1
       tell "; "
       renderI e2
+    BinOp e1 op e2 -> do
+      renderI e1
+      tell $ " " <> op <> " "
+      renderI e2
     e -> tell $ render e
 
 renderSepBy :: Render a => Text -> [a] -> Indenter
