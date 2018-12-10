@@ -18,7 +18,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Nix, Nix.Expr, Nix.Parser, Nix.LicenseType
-  other-modules:       Nix.Common
+  other-modules:       Nix.Common, Virtu.Parser
   build-depends:       base >=4.8 && <5
                      , classy-prelude
                      , text

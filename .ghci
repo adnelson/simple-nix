@@ -5,6 +5,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T
 import qualified Prelude as P
+import qualified Text.Parsec as Parsec
 -- These aren't a problem in GHCi, a bit more important when compiling.
 :set -fno-warn-type-defaults
 import qualified System.IO as IO
@@ -12,3 +13,5 @@ IO.hSetBuffering IO.stdout IO.LineBuffering
 IO.hSetBuffering IO.stderr IO.LineBuffering
 :set prompt "> "
 import System.Environment
+:set -XNoImplicitPrelude
+:set -XOverloadedStrings
