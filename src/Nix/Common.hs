@@ -11,7 +11,7 @@ module Nix.Common (
     module ClassyPrelude,
     module Control.Applicative,
     module Control.Exception,
-    module Control.Exception.ErrorList,
+--    module Control.Exception.ErrorList,
     module Control.Monad,
     module Control.Monad.Except,
     module Control.Monad.Identity,
@@ -31,7 +31,7 @@ module Nix.Common (
     module Text.Render,
     Name, Record,
     tuple, tuple3, fromRight, pathToText,
-    putStrsLn, putStrs, dropSuffix, maybeIf,
+    putStrsLn, putStrs, maybeIf,
     joinBy, mapJoinBy
   ) where
 
@@ -48,7 +48,7 @@ import Control.Monad.State.Strict (MonadState, StateT, State, get, gets,
                                    runStateT, execState, execStateT,
                                    evalState, evalStateT)
 import Control.Monad.Except (ExceptT, MonadError(..), throwError, runExceptT)
-import Control.Exception.ErrorList
+-- import Control.Exception.ErrorList
 import Control.Monad.Identity (Identity(..))
 import Control.Applicative hiding (empty, optional)
 import Data.Char (isDigit, isAlpha)
@@ -97,11 +97,6 @@ putStrsLn = putStrLn . concat
 
 putStrs :: MonadIO m => [Text] -> m ()
 putStrs = putStr . concat
-
-dropSuffix :: String -> String -> String
-dropSuffix suffix s | s == suffix = ""
-dropSuffix suffix (c:cs) = c : dropSuffix suffix cs
-dropSuffix suffix "" = ""
 
 maybeIf :: Bool -> a -> Maybe a
 maybeIf True x = Just x

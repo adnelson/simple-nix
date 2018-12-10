@@ -5,6 +5,7 @@
 module Nix.Parser where
 
 import qualified Prelude as P
+import qualified Data.Text.IO as T
 import Text.Parsec hiding (many, (<|>), spaces, parse, State, uncons)
 import qualified Text.Parsec as Parsec
 
@@ -316,7 +317,7 @@ parseFile :: String -> IO (Either ParseError NixExpr)
 parseFile = parseFileWith pTopLevel
 
 parseFileWith :: Parser a -> String -> IO (Either ParseError a)
-parseFileWith p path = parseFull (spaces >> p) <$> readFile path
+parseFileWith p path = parseFull (spaces >> p) <$> T.readFile path
 
 parseNix :: Text -> Either ParseError NixExpr
 parseNix = parseFull pTopLevel

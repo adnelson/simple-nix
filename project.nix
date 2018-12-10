@@ -7,11 +7,11 @@ mkDerivation {
   version = "0.1.0.3";
   src = ./.;
   buildDepends = [
-    base classy-prelude error-list MissingH mtl parsec system-filepath
+    base classy-prelude MissingH mtl parsec system-filepath
     text text-render unordered-containers
   ];
   testDepends = [
-    base classy-prelude error-list hspec hspec-expectations MissingH
+    base classy-prelude hspec hspec-expectations MissingH
     mtl parsec system-filepath text text-render unordered-containers
   ];
   homepage = "https://github.com/adnelson/simple-nix";
