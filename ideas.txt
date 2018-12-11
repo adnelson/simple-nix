@@ -1,0 +1,136 @@
+- Could make a very simple curly-brace based syntax for purescript. Same language (or a subset) but which compiles to a PureScript AST. It could even have a superior module system! But the main advantage would be ease of parsing, better parse errors, and familiarity to non-Haskell people.
+
+Influences:
+- ES6
+- ReasonML
+- Nix
+- Rust
+
+Features:
+- Better parser experience
+- JSX?
+- Easy string interpolation & multi-line strings (nix-style?)
+- Relative imports/module names
+- Almost transparent JavaScript interpolation
+- Easily create wrapper/aggregator modules
+- Macro system?
+- Inverted case clauses
+- Trailing commas
+- Automatic deriving?
+- Import anywhere in the module?
+- CSS and other non-modules files? Might be tough while still compiling to purescript
+
+// Module name is automatically resolved relative to the folder it's
+// in. If it's a nested module (see below) then it will inherit its
+// parent module as a prefix. In fact we could even omit the module
+// name, but not sure how I feel about this
+module Foo {
+
+// Trying to get a very terse syntax on this. Only write import once.
+// Could use a rust syntax for this.
+import {
+
+  // equivalent to `import Prelude`
+  Prelude (*);
+
+  // Equivalent to:
+  // import Data.HashMap (HashMap, class Hashable)
+  // import Data.HashMap as HM
+  Data.HashMap (type HashMap, class Hashable, * as HM);
+
+  // Equivalent to `import Data.Blorp (blimpy, bloopy, Blerp)`
+  Data.Blorp (val blimpy, val bloopy, type Blerp);
+
+  // Relative imports
+  .Util.Flab.Flib (val flibflab);
+
+  // Shorthands for multiple val/type/class etc
+  .Util.Flipflap (vals [flibber, flobber, ba, bee, boo], types [Axd, Scf, ABC])
+};
+
+// These values are defined below and exported by the module.
+// Alternatively `export(*)` can be stated which will make everything
+// default to exported.
+export (val frobulate, val prabl);
+
+// A value defined in javascript (the js part might not be necessary...)
+foreign(js) bleep: String;
+
+// Also a JS value. This one is exported by the module though, even
+// though it's not written in the export list.
+export foreign blorp: Blerp -> Int;
+
+// This value is not exported. It could be defined as `export frob = 123`
+// in which case it would be
+frob: HashMap = HM.fromList [1,3,4];
+
+// Inline type definitions in a function
+// Maybe automatically add the [a]? Although it's much more lightweight than forall...
+frobulate[a] (frob: HashMap String a) (fleeb: Int) -> Effect String = do {
+  x = HM.size frob;
+  y = replicate fleeb x;
+  zerp <- bloopy x y;
+  pure (yabbadaba zerp)
+};
+
+// Destructuring a record argument
+frobulateRec[a, r] { frob: HashMap String a, fleeb: Int } -> Effect String =
+  frobulate frob fleeb
+
+// Exported, also demonstrating type singatures. The `export` is only needed once.
+export blibberblob[a,b]: Int -> Int -> Int -> (b -> Int -> a) -> b -> a;
+
+// The implementation of blibberblob. Showing lambdas and symbols.
+blibberblob a b c f = \x -> f x $ (a + c) * b;
+
+// More complicated lambda, inline export.
+export grblbap x y = z => do { w = x * y * z; w * 3 };
+
+// Case statement. For now no multiple-definition function.
+prabl a b c = case a b {
+  Nothing -> c;
+  Just bop -> c bop
+};
+
+// Record literal, with field punning
+blarpIt a b c = { xy = c ("yo" <> a), b };
+
+// Destructuring with a record
+{ blag, bloog } = flapjack 14 ablab;
+
+// Type class
+class CanBeBlorped t where {
+  blorpMe : t -> Effect [Int];
+  unBlorpMe [Int] -> Maybe t
+};
+
+// Datatype definitions
+type Blerper = {
+  blerps : Int -> Effect String;
+  twerps : [String]
+};
+
+data Blerpington a = Blerper Blerper | Ington a;
+
+// Instances
+instance CanBeBlorped Blerpington where {
+  blorpMe = case _ of {
+    Ington _ -> pure [];
+    Blerper { blerps, twerps } -> do {
+      blerrrrrrr <- blerps (length twerps);
+      sum <$> mapM tutuPlop blerrrrrrr
+  };
+};
+
+// JSX
+myComponent : Int -> ReactElement;
+myComponent i = <p>This is number {show i}</p>;
+
+// Record update function shorthand
+// Equivalent to `\s -> s { counter = s.counter + 1 }`
+// Also note the alias in the type signature
+bumpCounter[r] : t@{ counter : Int | r } -> t;
+bumpCounter = !{counter += 1};
+
+// end of module
+}

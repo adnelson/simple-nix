@@ -33,6 +33,16 @@ data Module = Module {
   }
   deriving (Show, Eq, Generic)
 
+--- High level parsing types. These tell you, independent of exactly what AST is being produced, what syntactic device is currently being parsed (e.g. that a human would think of)
+data SyntaxType
+  = Parens
+  | Curlies
+  | CommaSeparatedItems
+  | ColonSeparatedItems
+  | ExpressionWithOperators
+--- etc. Then, have a stack of these things when parsing.
+
+
 -- NTS: consider mistakes that a user might make when entering the
 -- code. Where possible, make those mistakes easy to avoid, and
 -- otherwise make the error as obvious as possible.
